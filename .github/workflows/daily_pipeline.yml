@@ -19,6 +19,10 @@ jobs:
   pipeline:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
 
     steps:
       # ── 1. 取得程式碼 ────────────────────────────────────────────────
