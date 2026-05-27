@@ -101,9 +101,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 設定 git 身份
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
+          # 設定 git 身份（global 確保 clone 後的新目錄也生效）
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
 
           # clone gh-pages branch 到暫存目錄
           git clone \
