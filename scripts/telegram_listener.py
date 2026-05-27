@@ -26,10 +26,10 @@ import urllib.request
 from pathlib import Path
 
 # ── 設定 ──────────────────────────────────────────────────────────────
-TOKEN    = os.getenv("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID  = str(os.getenv("TELEGRAM_CHAT_ID", ""))
-GH_TOKEN = os.getenv("GH_TOKEN", "")
-REPO     = os.getenv("GITHUB_REPOSITORY", "")   # "bluexinfu/news-stock-radar"
+TOKEN    = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+CHAT_ID  = str(os.getenv("TELEGRAM_CHAT_ID", "")).strip()
+GH_TOKEN = os.getenv("GH_TOKEN", "").strip()
+REPO     = os.getenv("GITHUB_REPOSITORY", "").strip()   # "bluexinfu/news-stock-radar"
 
 OFFSET_FILE = Path("_data_cache/telegram_offset.txt")
 
@@ -57,15 +57,20 @@ def tg_request(method: str, params: dict | None = None, post_data: dict | None =
 
 def tg_send(text: str) -> None:
     """發送 HTML 格式訊息到授權 chat。"""
+    print(f"[SEND] 發送訊息到 chat_id={CHAT_ID[:6]}*** ...")
     try:
-        tg_request("sendMessage", post_data={
+        result = tg_request("sendMessage", post_data={
             "chat_id": CHAT_ID,
             "text": text,
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
         })
+        if result.get("ok"):
+            print("[SEND] ✅ 發送成功")
+        else:
+            print(f"[SEND] ❌ Telegram 回傳錯誤：{result.get('description', result)}")
     except Exception as e:
-        print(f"[WARN] Telegram 發送失敗：{e}")
+        print(f"[SEND] ❌ 發送例外：{e}")
 
 
 # ── GitHub 工具函式 ───────────────────────────────────────────────────
