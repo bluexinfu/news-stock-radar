@@ -98,12 +98,33 @@ jobs:
 
       # ── 8. 部署報告到 GitHub Pages ───────────────────────────────────
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: reports
-          keep_files: true
-          commit_message: "Deploy radar report ${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 設定 git 身份
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          # clone gh-pages branch 到暫存目錄
+          git clone \
+            --branch gh-pages --single-branch --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+            /tmp/gh-pages-deploy
+
+          # 複製今天的報告
+          cp reports/*.html /tmp/gh-pages-deploy/ 2>/dev/null || echo "⚠️ 無 HTML 報告可複製"
+          cp reports/*.png  /tmp/gh-pages-deploy/ 2>/dev/null || true
+
+          # commit & push（若無異動則略過）
+          cd /tmp/gh-pages-deploy
+          git add -A
+          if git diff --staged --quiet; then
+            echo "ℹ️ 報告無變動，略過 commit"
+          else
+            git commit -m "Deploy radar report ${{ github.run_id }}"
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
+            echo "✅ 報告已部署到 GitHub Pages"
+          fi
 
       # ── 9. 把更新的原始資料推回 data branch ─────────────────────────
       - name: Push updated raw data to data branch
