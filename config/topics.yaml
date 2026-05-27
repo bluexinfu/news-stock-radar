@@ -1,0 +1,139 @@
+cowos:
+  display_name: "CoWoS 先進封裝"
+  keywords:
+    primary: ["CoWoS"]
+    chinese: ["CoWoS", "台積電封裝", "先進封裝"]
+    english: ["CoWoS", "advanced packaging", "TSMC packaging"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2330.TW",  name: "台積電", role: "主要產出" }
+    secondary:
+      - { ticker: "3413.TW",  name: "京鼎",  role: "設備供應商" }
+      - { ticker: "3583.TW",  name: "辛耘",  role: "設備供應商" }
+      - { ticker: "3680.TWO", name: "家登",  role: "晶圓載具" }
+      - { ticker: "3131.TWO", name: "弘塑",  role: "設備供應商" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+hbm:
+  display_name: "HBM 高頻寬記憶體"
+  keywords:
+    primary: ["HBM"]
+    chinese: ["HBM", "高頻寬記憶體", "HBM記憶體", "寬頻記憶體"]
+    english: ["HBM", "high bandwidth memory", "HBM3", "HBM3E", "HBM4"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2330.TW", name: "台積電", role: "CoWoS-HBM封裝" }
+      - { ticker: "3037.TW", name: "欣興",  role: "ABF載板" }
+    secondary:
+      - { ticker: "8046.TW",  name: "南電",  role: "ABF載板" }
+      - { ticker: "3189.TW",  name: "景碩",  role: "ABF載板" }
+      - { ticker: "6239.TW",  name: "力成",  role: "記憶體封測" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+silicon_photonics:
+  display_name: "矽光子 / CPO"
+  keywords:
+    primary: ["矽光子"]
+    chinese: ["矽光子", "光連接", "CPO", "共封裝光學"]
+    english: ["silicon photonics", "CPO", "co-packaged optics", "optical interconnect"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2330.TW",  name: "台積電", role: "矽光子製程" }
+      - { ticker: "3081.TWO", name: "聯亞",  role: "化合物半導體/雷射" }
+    secondary:
+      - { ticker: "3533.TW",  name: "嘉澤",  role: "高速連接器" }
+      - { ticker: "6245.TWO", name: "光聖",  role: "光模組" }
+      - { ticker: "3504.TW",  name: "揚明光", role: "光學零組件" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+ai_server:
+  display_name: "AI 伺服器"
+  keywords:
+    primary: ["AI伺服器"]
+    chinese: ["AI伺服器", "GPU伺服器", "液冷散熱", "AI算力"]
+    english: ["AI server", "GPU server", "liquid cooling", "NVIDIA GB200", "NVL72"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "6669.TW", name: "緯穎", role: "AI伺服器ODM（NVIDIA主力）" }
+      - { ticker: "2382.TW", name: "廣達", role: "AI伺服器ODM" }
+    secondary:
+      - { ticker: "2376.TW", name: "技嘉", role: "AI伺服器/GPU主機板" }
+      - { ticker: "2356.TW", name: "英業達", role: "伺服器ODM" }
+      - { ticker: "2317.TW", name: "鴻海",  role: "伺服器製造/AI基礎建設" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+power_management:
+  display_name: "電源管理 / 儲能"
+  keywords:
+    primary: ["電源管理"]
+    chinese: ["電源管理", "儲能", "電力設備", "SiC功率", "碳化矽"]
+    english: ["power management", "energy storage", "SiC MOSFET", "power module", "VRPM"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2308.TW",  name: "台達電", role: "電源方案/儲能系統" }
+      - { ticker: "3707.TWO", name: "漢磊",  role: "SiC功率半導體" }
+    secondary:
+      - { ticker: "2457.TW",  name: "飛宏",  role: "電源供應器（AI伺服器）" }
+      - { ticker: "2481.TW",  name: "強茂",  role: "功率元件" }
+      - { ticker: "1503.TW",  name: "士電",  role: "電力設備/工業電控" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+passive_components:
+  display_name: "被動元件"
+  keywords:
+    primary: ["被動元件"]
+    chinese: ["被動元件", "MLCC", "電容", "電阻", "電感", "多層陶瓷電容"]
+    english: ["passive components", "MLCC", "ceramic capacitor", "capacitor resistor", "inductor"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2327.TW",  name: "國巨",  role: "MLCC/電阻（全球前三大）" }
+      - { ticker: "3026.TW",  name: "禾伸堂", role: "MLCC" }
+    secondary:
+      - { ticker: "2492.TW",  name: "華新科", role: "MLCC/電阻" }
+      - { ticker: "6173.TWO", name: "信昌電", role: "電容器" }
+      - { ticker: "2472.TW",  name: "立隆電", role: "電解電容" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
+
+optical_comm:
+  display_name: "光通訊（晶片→模組）"
+  keywords:
+    primary: ["光通訊"]
+    chinese: ["光通訊", "光模組", "光收發器", "400G光", "800G光", "光纖"]
+    english: ["optical communication", "optical transceiver", "optical module", "800G optics", "QSFP-DD", "datacom optics"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "3081.TWO", name: "聯亞",   role: "EML/DFB雷射晶片（晶片層）" }
+      - { ticker: "6492.TWO", name: "源傑",   role: "光晶片/磊晶基板" }
+    secondary:
+      - { ticker: "6245.TWO", name: "光聖",   role: "光模組（100G/400G）" }
+      - { ticker: "3363.TWO", name: "上詮",   role: "光收發器（CWDM4/LR4）" }
+      - { ticker: "4979.TWO", name: "華星光通", role: "光收發器（SFP/QSFP）" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"

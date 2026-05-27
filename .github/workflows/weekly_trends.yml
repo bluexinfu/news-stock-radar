@@ -1,0 +1,80 @@
+name: Weekly Trends Collection
+
+on:
+  schedule:
+    # 每週一 UTC 02:00（台灣時間 10:00，台股開盤前）
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  collect-trends:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # Trends 重試最多需要 30-60 分鐘
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data_cache
+        continue-on-error: true
+
+      - name: Restore raw data
+        run: |
+          if [ -d "_data_cache/data/raw" ]; then
+            mkdir -p data/raw
+            cp -r _data_cache/data/raw/. data/raw/
+          fi
+          mkdir -p data/raw/trends data/processed reports logs
+        continue-on-error: true
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Update end date to today
+        run: python scripts/update_dates.py
+
+      - name: Collect Google Trends only
+        run: |
+          echo "📈 採集 Google Trends（7 個主題）…"
+          python -c "
+          import yaml, sys
+          from pathlib import Path
+          ROOT = Path('.')
+          with open('config/topics.yaml') as f:
+              topics = yaml.safe_load(f)
+          sys.path.insert(0, str(ROOT))
+          from src.collectors.trends import collect
+          for topic, cfg in topics.items():
+              start = cfg['time_range']['start']
+              end   = cfg['time_range']['end']
+              try:
+                  print(f'[{topic}] 採集 Trends {start} ~ {end}')
+                  collect(topic, start, end)
+                  print(f'[{topic}] ✅ 完成')
+              except Exception as e:
+                  print(f'[{topic}] ⚠️ 失敗：{e}')
+          "
+
+      - name: Push updated Trends data to data branch
+        run: |
+          mkdir -p _data_cache/data/raw/trends
+          cp data/raw/trends/*.parquet _data_cache/data/raw/trends/ 2>/dev/null || true
+
+          cd _data_cache
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout data 2>/dev/null || git checkout --orphan data
+          git add data/raw/trends/
+          git diff --staged --quiet || git commit -m "chore: update trends data $(date -u +%Y-%m-%d)"
+          git push origin data
+        continue-on-error: true

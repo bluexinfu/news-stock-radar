@@ -1,0 +1,122 @@
+name: Daily Pipeline
+
+on:
+  schedule:
+    # 台灣時間 18:30（UTC+8）= UTC 10:30，週一至週五
+    - cron: '30 10 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      skip_trends:
+        description: '跳過 Google Trends 採集'
+        type: boolean
+        default: true
+      force_alert:
+        description: '強制發送 Telegram 日報（不管是否有相位異動）'
+        type: boolean
+        default: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── 1. 取得程式碼 ────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. 還原上次快取的原始資料 ────────────────────────────────────
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data_cache
+        continue-on-error: true   # 第一次執行時 data branch 還不存在
+
+      - name: Restore raw data from cache
+        run: |
+          if [ -d "_data_cache/data/raw" ]; then
+            mkdir -p data/raw
+            cp -r _data_cache/data/raw/. data/raw/
+            echo "✅ 還原原始資料快取成功"
+            find data/raw -name "*.parquet" | wc -l | xargs echo "  parquet 檔案數："
+          else
+            echo "ℹ️  無快取資料（首次執行），從頭採集"
+            mkdir -p data/raw data/processed reports logs
+          fi
+        continue-on-error: true
+
+      # ── 3. 建立目錄結構 ──────────────────────────────────────────────
+      - name: Ensure directory structure
+        run: |
+          mkdir -p data/raw/prices data/raw/trends data/raw/news data/raw/chips data/raw/news_broad
+          mkdir -p data/processed reports logs
+
+      # ── 4. Python 環境 ───────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 5. 更新日期範圍 ──────────────────────────────────────────────
+      - name: Update end date to today
+        run: python scripts/update_dates.py
+
+      # ── 6. 執行管線（跳過 Trends，避免 CI 環境 429 限流）────────────
+      - name: Run pipeline
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          SKIP_TRENDS=${{ github.event.inputs.skip_trends != 'false' && 'true' || 'false' }}
+          if [ "$SKIP_TRENDS" = "true" ]; then
+            echo "🔄 執行管線（跳過 Trends）…"
+            python run_pipeline.py --skip-trends --skip-alert --skip-quality
+          else
+            echo "🔄 執行管線（含 Trends）…"
+            python run_pipeline.py --skip-alert --skip-quality
+          fi
+
+      # ── 7. 發送 Telegram 通知（文字摘要 + GitHub Pages 連結）─────────
+      - name: Send Telegram alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # GitHub Pages 公開網址，自動從 repo 資訊組成
+          REPORT_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          FORCE=${{ github.event.inputs.force_alert == 'true' && '--force-send' || '' }}
+          python scripts/daily_alert.py $FORCE
+
+      # ── 8. 部署報告到 GitHub Pages ───────────────────────────────────
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: reports
+          keep_files: true
+          commit_message: "Deploy radar report ${{ github.run_id }}"
+
+      # ── 9. 把更新的原始資料推回 data branch ─────────────────────────
+      - name: Push updated raw data to data branch
+        run: |
+          # 準備 data branch 的內容
+          mkdir -p _data_cache/data/raw
+          cp -r data/raw/. _data_cache/data/raw/ 2>/dev/null || true
+
+          cd _data_cache
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          # 若 data branch 不存在則建立
+          git checkout data 2>/dev/null || git checkout --orphan data
+
+          # Stage 並 commit
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: update raw data $(date -u +%Y-%m-%d)"
+          git push origin data
+        continue-on-error: true   # 若 push 失敗不中斷整體工作流程

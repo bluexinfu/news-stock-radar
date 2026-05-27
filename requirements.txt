@@ -1,0 +1,38 @@
+# Python >= 3.11
+
+# 資料採集
+pytrends>=4.9.2
+yfinance>=0.2.40
+twstock
+feedparser
+gdeltdoc
+requests
+
+# 資料處理
+pandas>=2.0
+numpy
+pyarrow
+
+# 分析
+scipy
+statsmodels
+fuzzywuzzy
+python-Levenshtein
+
+# 視覺化
+matplotlib
+seaborn
+plotly>=5.0
+
+# Notebook
+jupyterlab
+nbformat
+nbconvert
+
+# 設定檔與環境
+pyyaml
+python-dotenv
+
+# NLP 情緒分析（Phase 3-D）
+snownlp
+jieba
