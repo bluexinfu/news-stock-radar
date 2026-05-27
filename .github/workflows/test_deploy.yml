@@ -1,0 +1,100 @@
+name: Test Deploy & Alert
+
+# 純測試用：跳過資料收集，直接測試 Telegram 推播 + GitHub Pages 部署
+# 用已快取的 processed 資料（從 data branch）產生通知和部署報告
+# 執行時間：約 2～3 分鐘
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_alert:
+        description: '強制發送 Telegram（不管有無相位異動）'
+        type: boolean
+        default: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 從 data branch 還原 processed 資料（NII 等）供通知腳本使用
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data_cache
+        continue-on-error: true
+
+      - name: Restore processed data
+        run: |
+          mkdir -p data/processed data/raw reports logs
+          if [ -d "_data_cache/data" ]; then
+            cp -r _data_cache/data/. data/ 2>/dev/null || true
+            echo "✅ 還原快取資料"
+            ls data/processed/*.parquet 2>/dev/null | wc -l | xargs echo "  processed 檔案數："
+          else
+            echo "⚠️  無快取資料，Telegram 訊息可能只有標題"
+          fi
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 產生一個測試用的佔位報告（若 reports/ 是空的）
+      - name: Ensure test report exists
+        run: |
+          TODAY=$(date -u +%Y%m%d)
+          REPORT="reports/radar_${TODAY}.html"
+          if [ ! -f "$REPORT" ]; then
+            echo "<html><body><h1>📊 題材雷達 測試部署 ${TODAY}</h1><p>此為測試頁面，正式報告每天 18:30 更新。</p></body></html>" > "$REPORT"
+            echo "ℹ️  建立測試用佔位報告：$REPORT"
+          else
+            echo "✅ 使用現有報告：$REPORT"
+          fi
+
+      # 發送 Telegram 推播
+      - name: Send Telegram alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPORT_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          FORCE=${{ github.event.inputs.force_alert == 'true' && '--force-send' || '' }}
+          python scripts/daily_alert.py $FORCE
+
+      # 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          git clone \
+            --branch gh-pages --single-branch --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" \
+            /tmp/gh-pages-deploy
+
+          cp reports/*.html /tmp/gh-pages-deploy/ 2>/dev/null || true
+          cp reports/*.png  /tmp/gh-pages-deploy/ 2>/dev/null || true
+
+          cd /tmp/gh-pages-deploy
+          git add -A
+          if git diff --staged --quiet; then
+            echo "ℹ️ 報告無變動，略過 commit"
+          else
+            git commit -m "Test deploy ${{ github.run_id }}"
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
+            echo "✅ 測試報告已部署"
+          fi
