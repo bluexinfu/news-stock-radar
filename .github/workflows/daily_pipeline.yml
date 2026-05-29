@@ -85,19 +85,7 @@ jobs:
             python run_pipeline.py --skip-alert --skip-quality
           fi
 
-      # ── 7. 發送 Telegram 通知（文字摘要 + GitHub Pages 連結）─────────
-      - name: Send Telegram alert
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # GitHub Pages 公開網址，自動從 repo 資訊組成
-          REPORT_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          # 每次執行都強制發送日報，確保使用者每天收到通知
-          # （即使今日無 Phase 異動，也會發送「今日無訊號」摘要）
-          python scripts/daily_alert.py --force-send
-
-      # ── 8. 部署報告到 GitHub Pages ───────────────────────────────────
+      # ── 7. 部署報告到 GitHub Pages（先部署，再通知，確保連結上線）───
       - name: Deploy to GitHub Pages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -126,6 +114,18 @@ jobs:
             git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
             echo "✅ 報告已部署到 GitHub Pages"
           fi
+
+      # ── 8. 發送 Telegram 通知（部署後才通知，確保連結已上線）─────────
+      - name: Send Telegram alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # GitHub Pages 公開網址，自動從 repo 資訊組成
+          REPORT_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          # 每次執行都強制發送日報，確保使用者每天收到通知
+          # （即使今日無 Phase 異動，也會發送「今日無訊號」摘要，連結已上線）
+          python scripts/daily_alert.py --force-send
 
       # ── 9. 把更新的原始資料推回 data branch ─────────────────────────
       - name: Push updated raw data to data branch
