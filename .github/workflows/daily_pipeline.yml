@@ -93,8 +93,9 @@ jobs:
           # GitHub Pages 公開網址，自動從 repo 資訊組成
           REPORT_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          FORCE=${{ github.event.inputs.force_alert == 'true' && '--force-send' || '' }}
-          python scripts/daily_alert.py $FORCE
+          # 每次執行都強制發送日報，確保使用者每天收到通知
+          # （即使今日無 Phase 異動，也會發送「今日無訊號」摘要）
+          python scripts/daily_alert.py --force-send
 
       # ── 8. 部署報告到 GitHub Pages ───────────────────────────────────
       - name: Deploy to GitHub Pages
