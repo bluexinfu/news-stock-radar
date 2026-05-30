@@ -326,7 +326,7 @@ def generate_radar(
 
   <div class="legend">
     <span style="background:#ECEFF1; color:#546E7A">❄️ 冷卻：NII低且下行</span>
-    <span style="background:#FFF8E1; color:#E65100">🌡️ 預熱：NII低但上行（早期訊號）</span>
+    <span style="background:#FFF8E1; color:#E65100">🌡️ 預熱：NII低但上行</span>
     <span style="background:#FFEBEE; color:#B71C1C">🔥 發燒：NII高</span>
     <span style="background:#E3F2FD; color:#0D47A1">📉 降溫：NII高但下行</span>
   </div>
@@ -349,7 +349,7 @@ def generate_radar(
         <div style="background:#FFF8E1; border-radius:8px; padding:12px">
           <div style="font-size:18px; margin-bottom:4px">🌡️ <b style="color:#E65100">預熱</b></div>
           <div><b>消息面開始升溫</b>，新聞量與搜尋量從低點往上走，但還不算多。</div>
-          <div style="margin-top:6px; color:#777">→ 市場開始關注，股價可能還沒完全反應，屬於<b>早期訊號</b></div>
+          <div style="margin-top:6px; color:#777">→ 市場關注度開始上升。<b>註：經回測驗證，熱度與股價多為同步，此訊號不代表領先進場</b></div>
         </div>
         <div style="background:#FFEBEE; border-radius:8px; padding:12px">
           <div style="font-size:18px; margin-bottom:4px">🔥 <b style="color:#B71C1C">發燒</b></div>
