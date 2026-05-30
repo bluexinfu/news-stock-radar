@@ -1,5 +1,5 @@
 /**
- * 題材雷達 — Telegram Bot Webhook Handler
+ * 題材雷達 — Telegram Bot Webhook Handler + 定時排程觸發器
  * 部署於 Cloudflare Workers（免費方案）
  *
  * 環境變數（在 Cloudflare 後台設定為 Secrets）：
@@ -12,9 +12,19 @@
  *   /run    — 立即觸發日報管線
  *   /status — 查詢管線執行狀態
  *   /help   — 顯示可用指令
+ *
+ * Cron Trigger（在 Cloudflare 後台 Workers > Triggers 設定）：
+ *   30 10 * * 1-5   — 台北時間 18:30，週一至週五自動觸發日報
  */
 
 export default {
+  // ── 定時排程觸發（Cron Trigger）────────────────────────────────────
+  // 由 Cloudflare 定時喚醒，取代不可靠的 GitHub Actions schedule
+  async scheduled(event, env, ctx) {
+    console.log(`[CRON] 定時觸發：${new Date(event.scheduledTime).toISOString()}`);
+    ctx.waitUntil(handleScheduledRun(env));
+  },
+
   async fetch(request, env) {
     // 只接受 POST（Telegram Webhook 使用 POST）
     if (request.method !== "POST") {
@@ -58,6 +68,35 @@ export default {
     return new Response("OK", { status: 200 });
   },
 };
+
+// ── 定時排程處理 ──────────────────────────────────────────────────────
+
+async function handleScheduledRun(env) {
+  console.log("[CRON] 開始觸發日報管線...");
+  const ok = await ghPost(
+    env,
+    `/repos/${env.GITHUB_REPO}/actions/workflows/daily_pipeline.yml/dispatches`,
+    { ref: "main" }
+  );
+
+  if (ok) {
+    console.log("[CRON] ✅ 日報管線已成功觸發");
+    // 發送 Telegram 通知（讓使用者知道排程已啟動）
+    await tgSend(env, String(env.TELEGRAM_CHAT_ID),
+      `⏰ <b>今日日報已排程啟動</b>\n` +
+      `🕡 台北時間 18:30 自動觸發\n` +
+      `⏳ 約 20 分鐘後會收到完整報告。\n\n` +
+      `🔍 <a href="https://github.com/${env.GITHUB_REPO}/actions">查看執行進度</a>`
+    );
+  } else {
+    console.error("[CRON] ❌ 觸發管線失敗");
+    await tgSend(env, String(env.TELEGRAM_CHAT_ID),
+      `⚠️ <b>排程觸發失敗</b>\n` +
+      `請手動傳送 /run 或至 ` +
+      `<a href="https://github.com/${env.GITHUB_REPO}/actions">GitHub Actions</a> 手動執行。`
+    );
+  }
+}
 
 // ── 指令處理 ──────────────────────────────────────────────────────────
 
