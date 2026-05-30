@@ -1,9 +1,9 @@
 name: Daily Pipeline
 
 on:
-  schedule:
-    # 台灣時間 18:30（UTC+8）= UTC 10:30，週一至週五
-    - cron: '30 10 * * 1-5'
+  # 排程改由 Cloudflare Cron Trigger（30 10 * * MON-FRI）負責觸發，
+  # 透過 workflow_dispatch 呼叫。GitHub 自身的 schedule 已移除，
+  # 避免與 Cloudflare 重複觸發造成雙重執行與雙重通知。
   workflow_dispatch:
     inputs:
       skip_trends:
