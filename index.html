@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>題材雷達</title>
+  <style>
+    body { font-family: -apple-system, "PingFang TC", sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; background: #f5f7fa; color: #37474F; }
+    .box { text-align: center; }
+    .spin { width: 36px; height: 36px; border: 4px solid #BDD7EE;
+            border-top-color: #2E75B6; border-radius: 50%;
+            animation: r 0.9s linear infinite; margin: 0 auto 16px; }
+    @keyframes r { to { transform: rotate(360deg); } }
+    a { color: #2E75B6; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spin"></div>
+    <p id="msg">正在載入最新題材雷達報告…</p>
+  </div>
+  <script>
+    // 從今天往回找最多 14 天，導向最近一份存在的報告
+    (function () {
+      function pad(n) { return String(n).padStart(2, "0"); }
+      function fname(d) {
+        return "radar_" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + ".html";
+      }
+      var tries = [], d = new Date();
+      for (var i = 0; i < 14; i++) { tries.push(fname(d)); d.setDate(d.getDate() - 1); }
+      var idx = 0;
+      function next() {
+        if (idx >= tries.length) {
+          document.getElementById("msg").innerHTML = "目前找不到報告，請稍後再試。";
+          return;
+        }
+        var url = tries[idx++];
+        fetch(url, { method: "HEAD" })
+          .then(function (r) { if (r.ok) location.replace(url); else next(); })
+          .catch(next);
+      }
+      next();
+    })();
+  </script>
+</body>
+</html>
