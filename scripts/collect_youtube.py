@@ -167,11 +167,14 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="YouTube 觀看熱度採集（P2）")
     ap.add_argument("--days", type=int, default=190, help="回溯天數（涵蓋現有資料窗）")
     ap.add_argument("--max-pages", type=int, default=1, help="每題材每月切片分頁上限")
+    ap.add_argument("--topic", help="只採集單一題材（預設全部）")
     args = ap.parse_args()
 
     key = load_api_key()
     ch_w, ch_default, min_subs = load_channel_weights()
     queries = load_topic_queries()
+    if args.topic:
+        queries = {args.topic: queries[args.topic]} if args.topic in queries else {}
     slices = month_slices(args.days)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
