@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>題材熱度雷達 · 2026-05-31</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --primary:#1565C0; --primary-d:#0D47A1; --surface:#fff; --bg:#F1F3F4;
+    --on-surface:#202124; --muted:#5F6368; --news:#1E88E5; --yt:#E53935; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--on-surface);
+    font-family:'Roboto','Noto Sans TC',-apple-system,sans-serif; }
+  .app-bar { background:linear-gradient(135deg,var(--primary),var(--primary-d));
+    color:#fff; padding:20px 24px; box-shadow:0 2px 6px rgba(0,0,0,.2); position:sticky; top:0; z-index:10; }
+  .app-bar h1 { margin:0; font-size:22px; font-weight:700; letter-spacing:.5px; }
+  .app-bar .date { opacity:.9; font-size:13px; margin-top:2px; }
+  main { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+  .disclaimer { background:#FFF8E1; border-left:4px solid #F9A825; color:#5F4300;
+    padding:10px 14px; border-radius:6px; font-size:12.5px; margin-bottom:20px; }
+  .card { background:var(--surface); border-radius:14px; padding:18px 20px;
+    box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08); margin-bottom:20px; }
+  .card h2 { margin:0 0 14px; font-size:17px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:9px 8px; border-bottom:1px solid #ECEFF1; }
+  th { color:var(--muted); font-weight:500; font-size:12px; }
+  td.num,th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  td.rank { color:var(--muted); width:28px; }
+  td.tname { font-weight:500; }
+  td.news { color:var(--news); } td.yt { color:var(--yt); }
+  .chip { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:500; white-space:nowrap; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:18px; }
+  .topic-top { display:flex; justify-content:space-between; align-items:center; }
+  .topic-name { font-size:16px; font-weight:700; }
+  .stocks { margin:6px 0 2px; font-size:11.5px; color:var(--muted); }
+  .stk { display:inline-block; background:#F1F3F4; border-radius:4px; padding:1px 6px; margin:2px 2px 0 0; }
+  .metric-row { display:flex; align-items:flex-end; justify-content:space-between; margin:8px 0 14px; }
+  .big { font-size:42px; font-weight:700; line-height:1; color:var(--primary); }
+  .big .unit { font-size:15px; color:var(--muted); font-weight:400; }
+  .accel { text-align:right; font-size:18px; font-weight:700; }
+  .accel-cap { font-size:10px; color:var(--muted); font-weight:400; }
+  .bars { margin-bottom:8px; }
+  .bar-row { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:12px; }
+  .bar-lab { width:64px; color:var(--muted); }
+  .bar { flex:1; height:8px; background:#ECEFF1; border-radius:4px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; }
+  .bar-fill.news { background:var(--news); } .bar-fill.yt { background:var(--yt); }
+  .bar-val { width:26px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+  .counts { font-size:11.5px; color:var(--muted); margin:4px 0 2px; }
+  .pchg { background:#EDE7F6; color:#5E35B1; border-radius:4px; padding:1px 6px; margin-left:4px; }
+  .chart-wrap { position:relative; height:165px; margin-top:8px; }
+  .legend-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .legend-item { background:#FAFAFA; border-radius:8px; padding:10px 12px; }
+  .legend-h { font-size:14px; margin-bottom:3px; }
+  .legend-d { font-size:12px; color:var(--muted); line-height:1.5; }
+  .method p { font-size:13px; line-height:1.8; color:#3C4043; margin:6px 0; }
+  .method b { color:var(--on-surface); }
+  .method .formula { background:#F1F3F4; border-radius:6px; padding:8px 12px; font-size:12.5px; margin:8px 0; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:10px 16px 40px; }
+  @media(max-width:480px) { .app-bar h1{font-size:19px;} .big{font-size:36px;} }
+</style>
+</head>
+<body>
+  <div class="app-bar">
+    <h1>📡 題材熱度雷達</h1>
+    <div class="date">2026-05-31 · 市場熱度指標 v2（權威新聞 + 影片觀看）</div>
+  </div>
+  <main>
+    <div class="disclaimer">⚠️ 本報告衡量「題材關注熱度」，所有指標均為觀察性統計，股價僅作對照。相關不等於因果，不構成投資建議。</div>
+
+    <div class="card">
+      <h2>今日熱度排行</h2>
+      <table>
+        <thead><tr>
+          <th>#</th><th>題材</th><th>相位</th>
+          <th class="num">綜合</th><th class="num">新聞型</th><th class="num">影片型</th><th class="num">加速</th>
+        </tr></thead>
+        <tbody>
+        <tr>
+          <td class="rank">1</td>
+          <td class="tname">被動元件</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>83</b></td>
+          <td class="num news">100</td>
+          <td class="num yt">17</td>
+          <td class="num" style="color:#C62828">▲ 4.5</td>
+        </tr>
+        <tr>
+          <td class="rank">2</td>
+          <td class="tname">AI 伺服器</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>78</b></td>
+          <td class="num news">95</td>
+          <td class="num yt">10</td>
+          <td class="num" style="color:#C62828">▲ 8.1</td>
+        </tr>
+        <tr>
+          <td class="rank">3</td>
+          <td class="tname">HBM 高頻寬記憶體</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>64</b></td>
+          <td class="num news">70</td>
+          <td class="num yt">41</td>
+          <td class="num" style="color:#C62828">▲ 5.2</td>
+        </tr>
+        <tr>
+          <td class="rank">4</td>
+          <td class="tname">矽光子 / CPO</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>62</b></td>
+          <td class="num news">77</td>
+          <td class="num yt">0</td>
+          <td class="num" style="color:#C62828">▲ 8.0</td>
+        </tr>
+        <tr>
+          <td class="rank">5</td>
+          <td class="tname">電源管理 / 儲能</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>60</b></td>
+          <td class="num news">75</td>
+          <td class="num yt">0</td>
+          <td class="num" style="color:#C62828">▲ 7.3</td>
+        </tr>
+        <tr>
+          <td class="rank">6</td>
+          <td class="tname">CoWoS 先進封裝</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>59</b></td>
+          <td class="num news">62</td>
+          <td class="num yt">45</td>
+          <td class="num" style="color:#C62828">▲ 3.5</td>
+        </tr>
+        <tr>
+          <td class="rank">7</td>
+          <td class="tname">光通訊（晶片→模組）</td>
+          <td><span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span></td>
+          <td class="num"><b>51</b></td>
+          <td class="num news">62</td>
+          <td class="num yt">7</td>
+          <td class="num" style="color:#C62828">▲ 5.6</td>
+        </tr></tbody>
+      </table>
+    </div>
+
+    <div class="grid">
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">被動元件</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>2327 國巨</span> · <span class='stk'>3026 禾伸堂</span> · <span class='stk'>2492 華新科</span> · <span class='stk'>6173 信昌電</span></div>
+        <div class="metric-row">
+          <div class="big">83<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 4.5<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:100%"></div></div>
+            <span class="bar-val">100</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:17%"></div></div>
+            <span class="bar-val">17</span></div>
+        </div>
+        <div class="counts">📰 620 篇新聞 · ▶️ 74 部影片 <span class='pchg'>🔄 降溫→發燒 (05/07)</span></div>
+        <div class="chart-wrap"><canvas id="chart-passive_components"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">AI 伺服器</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>6669 緯穎</span> · <span class='stk'>2382 廣達</span> · <span class='stk'>2376 技嘉</span> · <span class='stk'>2356 英業達</span></div>
+        <div class="metric-row">
+          <div class="big">78<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 8.1<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:95%"></div></div>
+            <span class="bar-val">95</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:10%"></div></div>
+            <span class="bar-val">10</span></div>
+        </div>
+        <div class="counts">📰 650 篇新聞 · ▶️ 55 部影片 <span class='pchg'>🔄 冷卻→發燒 (04/24)</span></div>
+        <div class="chart-wrap"><canvas id="chart-ai_server"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">HBM 高頻寬記憶體</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>2330 台積電</span> · <span class='stk'>3037 欣興</span> · <span class='stk'>8046 南電</span> · <span class='stk'>3189 景碩</span></div>
+        <div class="metric-row">
+          <div class="big">64<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 5.2<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:70%"></div></div>
+            <span class="bar-val">70</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:41%"></div></div>
+            <span class="bar-val">41</span></div>
+        </div>
+        <div class="counts">📰 538 篇新聞 · ▶️ 347 部影片 <span class='pchg'>🔄 降溫→發燒 (05/13)</span></div>
+        <div class="chart-wrap"><canvas id="chart-hbm"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">矽光子 / CPO</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>2330 台積電</span> · <span class='stk'>3081 聯亞</span> · <span class='stk'>3533 嘉澤</span> · <span class='stk'>6245 光聖</span></div>
+        <div class="metric-row">
+          <div class="big">62<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 8.0<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:77%"></div></div>
+            <span class="bar-val">77</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:0%"></div></div>
+            <span class="bar-val">0</span></div>
+        </div>
+        <div class="counts">📰 557 篇新聞 · ▶️ 31 部影片 <span class='pchg'>🔄 降溫→發燒 (05/25)</span></div>
+        <div class="chart-wrap"><canvas id="chart-silicon_photonics"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">電源管理 / 儲能</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>2308 台達電</span> · <span class='stk'>3707 漢磊</span> · <span class='stk'>2457 飛宏</span> · <span class='stk'>2481 強茂</span></div>
+        <div class="metric-row">
+          <div class="big">60<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 7.3<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:75%"></div></div>
+            <span class="bar-val">75</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:0%"></div></div>
+            <span class="bar-val">0</span></div>
+        </div>
+        <div class="counts">📰 668 篇新聞 · ▶️ 7 部影片 <span class='pchg'>🔄 降溫→發燒 (05/21)</span></div>
+        <div class="chart-wrap"><canvas id="chart-power_management"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">CoWoS 先進封裝</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>2330 台積電</span> · <span class='stk'>3413 京鼎</span> · <span class='stk'>3583 辛耘</span> · <span class='stk'>3680 家登</span></div>
+        <div class="metric-row">
+          <div class="big">59<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 3.5<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:62%"></div></div>
+            <span class="bar-val">62</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:45%"></div></div>
+            <span class="bar-val">45</span></div>
+        </div>
+        <div class="counts">📰 451 篇新聞 · ▶️ 297 部影片 <span class='pchg'>🔄 降溫→發燒 (05/04)</span></div>
+        <div class="chart-wrap"><canvas id="chart-cowos"></canvas></div>
+      </div>
+      <div class="card topic">
+        <div class="topic-top">
+          <div class="topic-name">光通訊（晶片→模組）</div>
+          <span class="chip" style="background:#FFEBEE;color:#C62828">🔥 發燒</span>
+        </div>
+        <div class="stocks"><span class='stk'>3081 聯亞</span> · <span class='stk'>6492 源傑</span> · <span class='stk'>6245 光聖</span> · <span class='stk'>3363 上詮</span></div>
+        <div class="metric-row">
+          <div class="big">51<span class="unit">/100</span></div>
+          <div class="accel" style="color:#C62828">▲ 5.6<div class="accel-cap">加速度</div></div>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span class="bar-lab">📰 新聞型</span>
+            <div class="bar"><div class="bar-fill news" style="width:62%"></div></div>
+            <span class="bar-val">62</span></div>
+          <div class="bar-row"><span class="bar-lab">▶️ 影片型</span>
+            <div class="bar"><div class="bar-fill yt" style="width:7%"></div></div>
+            <span class="bar-val">7</span></div>
+        </div>
+        <div class="counts">📰 635 篇新聞 · ▶️ 46 部影片 <span class='pchg'>🔄 降溫→發燒 (05/25)</span></div>
+        <div class="chart-wrap"><canvas id="chart-optical_comm"></canvas></div>
+      </div></div>
+
+    <div class="card">
+      <h2>📖 相位說明</h2>
+      <div class="legend-grid">
+        <div class="legend-item" style="border-left:4px solid #546E7A">
+          <div class="legend-h">❄️ <b style="color:#546E7A">冷卻</b></div>
+          <div class="legend-d">關注度低且持平或下降，題材尚未受市場注意。</div>
+        </div>
+        <div class="legend-item" style="border-left:4px solid #EF6C00">
+          <div class="legend-h">🌡️ <b style="color:#EF6C00">預熱</b></div>
+          <div class="legend-d">關注度仍低，但開始往上走，題材正在醞釀。</div>
+        </div>
+        <div class="legend-item" style="border-left:4px solid #C62828">
+          <div class="legend-h">🔥 <b style="color:#C62828">發燒</b></div>
+          <div class="legend-d">關注度顯著偏高（超過均值＋1σ），題材成為焦點。</div>
+        </div>
+        <div class="legend-item" style="border-left:4px solid #1565C0">
+          <div class="legend-h">📉 <b style="color:#1565C0">降溫</b></div>
+          <div class="legend-d">關注度仍高但開始回落，熱度從高峰消退。</div>
+        </div></div>
+    </div>
+
+    <div class="card method">
+      <h2>🔬 分析方法論</h2>
+      <p>本系統衡量的是「<b>市場對題材的關注熱度</b>」，而非預測股價。熱度由兩個來源合成：</p>
+      <p>① <b>新聞型關注</b>：各媒體每篇報導，依「來源可信度」加權（經濟日報、工商時報、MoneyDJ、DIGITIMES 等專業財經/半導體媒體權重高；內容農場、自動生成稿權重低）。</p>
+      <p>② <b>影片型關注</b>：財經 YouTube 影片的觀看數加權（僅計訂閱數 ≥ 2 萬的頻道，並依頻道可信度分級，過濾明牌台與雜訊小頻道）。</p>
+      <div class="formula">綜合熱度 = 新聞型關注 × 80% + 影片型關注 × 20%　（兩者皆先全域正規化到 0~100，避免尺度失衡）</div>
+      <p><b>相位</b>：依熱度的相對高低（與該題材自身歷史均值±1σ 比較）與升降方向，分為冷卻／預熱／發燒／降溫四階段。<b>加速度</b>：熱度近期的變化速率（正值升溫、負值降溫）。</p>
+      <p style="color:#C62828"><b>重要：</b>經歷史回測驗證，本熱度與股價多為「<b>同步</b>」關係而非「領先」——它是一支準確的「<b>題材熱度溫度計</b>」，可掌握當下哪個題材最受關注，但<b>不是預測股價的水晶球</b>，請勿單以熱度作為進出場依據。</p>
+    </div>
+  </main>
+  <footer>題材熱度雷達 · 自動產生於 2026-05-31<br>關注度 = 權威加權新聞 + YouTube 觀看加權（訂閱≥2萬）｜僅供研究參考，不構成投資建議</footer>
+
+<script>
+const DATA = {"passive_components": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [8.0, 7.2, 7.0, 6.2, 7.1, 6.4, 7.9, 5.9, 8.6, 8.8, 10.0, 9.4, 9.9, 7.6, 10.2, 10.1, 9.4, 8.5, 9.9, 9.9, 9.9, 7.8, 5.2, 5.0, 4.6, 4.1, 4.0, 4.6, 4.1, 4.6, 8.4, 8.2, 7.2, 6.6, 11.0, 16.2, 17.8, 15.8, 17.7, 22.9, 25.3, 21.1, 16.6, 14.5, 13.3, 12.2, 6.7, 5.5, 5.4, 6.4, 5.7, 7.3, 8.0, 9.2, 21.8, 23.7, 27.0, 28.0, 27.0, 30.2, 28.7, 15.7, 13.6, 9.0, 8.5, 9.0, 5.1, 6.8, 7.3, 10.0, 11.1, 12.7, 11.7, 11.7, 10.5, 10.5, 9.4, 7.6, 7.7, 9.1, 9.7, 11.1, 10.1, 10.0, 10.2, 8.3, 10.6, 12.0, 15.5, 16.5, 15.6, 18.8, 20.0, 17.0, 14.7, 9.6, 9.4, 13.4, 12.2, 13.1, 13.2, 13.3, 14.2, 17.8, 19.4, 21.5, 26.4, 28.0, 39.9, 40.5, 46.4, 47.0, 55.7, 59.4, 62.7, 72.3, 82.3, 79.9, 85.1, 83.4], "price": [null, 0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.1, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.1, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, -0.1, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0, 0.0, -0.0, -0.0, -0.1, 0.0, 0.0, -0.1, 0.0, 0.0, -0.0, 0.0, 0.0, 0.1, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.1, 0.0, -0.0, 0.0, 0.1, 0.0, 0.0, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.1, -0.0, 0.0, 0.1, -0.0, -0.0, 0.1, 0.0, 0.0, 0.1, 0.1, 0.0, 0.1, 0.0, 0.1, -0.1, 0.1, -0.0, 0.1, 0.1, 0.1, 0.1, 0.0, 0.1, 0.0, 0.0]}, "ai_server": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [1.5, 4.1, 5.4, 6.7, 6.7, 6.6, 7.2, 7.6, 7.9, 5.8, 4.8, 4.6, 5.0, 4.3, 4.5, 4.4, 4.9, 5.5, 6.5, 5.5, 5.0, 4.3, 4.6, 3.9, 4.1, 2.9, 5.0, 6.6, 9.8, 8.9, 9.1, 9.4, 9.6, 8.3, 8.3, 5.6, 5.7, 7.4, 7.2, 6.7, 8.0, 6.9, 6.4, 6.4, 4.6, 4.2, 6.0, 3.9, 3.5, 3.2, 3.6, 4.6, 4.1, 2.2, 9.3, 10.8, 12.0, 12.4, 12.9, 12.9, 13.4, 7.8, 6.5, 6.2, 5.6, 4.4, 8.2, 9.8, 14.5, 18.5, 21.4, 23.0, 26.2, 25.1, 25.3, 19.9, 16.1, 12.5, 11.6, 8.0, 8.1, 6.2, 6.7, 7.0, 8.6, 7.2, 7.0, 5.7, 5.5, 5.5, 5.2, 4.8, 5.4, 6.9, 7.8, 10.5, 10.8, 11.6, 11.9, 13.7, 14.0, 15.7, 16.1, 19.3, 21.7, 22.2, 23.6, 26.3, 26.1, 26.4, 22.9, 20.6, 19.8, 19.6, 18.6, 29.5, 30.3, 34.5, 41.8, 78.1], "price": [null, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.1, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.1, 0.0, 0.0, -0.0, -0.0, 0.0, 0.1]}, "hbm": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [0.0, 3.4, 2.2, 6.2, 6.0, 6.1, 6.3, 6.6, 6.2, 6.2, 4.6, 5.8, 8.9, 9.8, 15.7, 16.6, 21.2, 24.1, 23.7, 20.1, 20.2, 15.2, 13.9, 9.9, 6.1, 5.2, 6.6, 5.7, 4.6, 4.6, 4.3, 5.5, 5.5, 5.9, 10.7, 15.8, 16.5, 18.5, 18.8, 18.8, 16.8, 13.9, 11.6, 12.6, 13.3, 12.4, 12.0, 12.1, 10.1, 7.8, 6.8, 9.7, 12.2, 13.9, 25.8, 25.3, 24.8, 24.7, 19.8, 17.5, 16.0, 3.8, 4.3, 6.8, 6.3, 6.6, 7.2, 7.0, 15.0, 23.9, 23.9, 24.4, 25.3, 25.1, 24.9, 17.5, 9.4, 9.1, 9.4, 7.1, 7.6, 10.3, 13.8, 15.4, 15.7, 17.5, 19.4, 19.8, 19.0, 18.3, 16.3, 16.1, 16.5, 15.7, 14.2, 13.7, 14.4, 14.1, 12.4, 10.5, 13.6, 14.0, 13.3, 9.9, 11.0, 14.6, 15.8, 14.9, 14.9, 15.5, 23.0, 26.5, 27.3, 31.2, 29.9, 39.1, 46.7, 45.8, 49.5, 64.3], "price": [null, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.1, 0.0, -0.0, -0.0, 0.0, 0.1, 0.0, -0.0, 0.0, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0, -0.0, 0.1, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0, 0.0, -0.0, -0.0, -0.1, 0.0, -0.0, -0.1, 0.0, 0.1, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, -0.1, -0.0, 0.1, 0.0, -0.0, -0.0, -0.1, 0.1, 0.0, 0.0, 0.1, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.1, 0.0, 0.0, -0.0, 0.1, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.1, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.1, 0.1, 0.0, 0.1, -0.0, -0.0, 0.0]}, "silicon_photonics": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [0.0, 1.8, 2.2, 2.4, 3.2, 2.9, 2.7, 2.7, 4.6, 5.4, 5.0, 4.1, 5.2, 5.2, 6.1, 4.3, 3.6, 3.8, 5.2, 5.9, 5.9, 5.1, 6.2, 6.0, 5.8, 6.1, 4.2, 4.8, 5.1, 3.4, 3.2, 3.3, 2.6, 2.6, 1.7, 3.0, 3.0, 3.0, 3.6, 2.7, 2.7, 4.1, 3.2, 4.1, 4.1, 4.1, 4.6, 7.9, 6.7, 6.8, 5.9, 6.5, 5.8, 7.5, 5.9, 6.2, 6.1, 7.0, 6.8, 9.8, 10.3, 9.1, 8.6, 9.6, 9.8, 10.9, 12.1, 12.2, 14.9, 21.3, 21.0, 20.9, 20.2, 17.6, 16.2, 13.1, 7.7, 7.1, 7.4, 8.3, 10.6, 9.4, 12.2, 11.9, 14.4, 13.6, 15.8, 13.5, 15.5, 15.6, 15.5, 15.6, 16.4, 14.8, 15.1, 14.0, 14.3, 14.6, 11.9, 13.1, 15.1, 20.1, 22.0, 21.6, 23.7, 26.6, 26.3, 24.1, 18.7, 16.6, 15.2, 12.8, 14.2, 14.2, 12.3, 17.8, 23.7, 29.1, 46.8, 62.0], "price": [null, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.1, 0.0, 0.0, -0.1, 0.0, 0.1, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.1, 0.0, 0.0, -0.0, -0.1, 0.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0]}, "power_management": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [0.0, 0.0, 0.5, 3.6, 3.2, 3.5, 3.2, 4.9, 6.2, 6.5, 6.8, 7.0, 6.3, 7.0, 5.4, 5.3, 5.0, 3.8, 4.5, 4.7, 3.8, 4.2, 4.9, 6.0, 5.1, 4.3, 6.5, 7.4, 7.0, 5.8, 5.0, 5.5, 7.1, 6.9, 6.9, 6.9, 10.1, 10.2, 11.1, 10.1, 8.8, 9.1, 10.3, 8.5, 10.2, 9.3, 9.8, 13.0, 14.4, 14.1, 12.4, 11.8, 12.8, 12.4, 13.4, 11.9, 13.8, 14.7, 15.2, 14.5, 14.5, 10.7, 10.2, 11.0, 11.3, 10.4, 11.5, 12.8, 13.3, 13.8, 12.7, 12.5, 11.8, 12.2, 11.3, 9.7, 10.4, 10.8, 11.3, 12.2, 10.8, 10.5, 16.1, 14.4, 11.6, 10.3, 11.3, 11.1, 11.8, 8.0, 8.0, 10.8, 12.4, 11.8, 12.8, 13.6, 16.6, 17.5, 17.5, 15.4, 16.0, 17.4, 18.8, 17.9, 20.4, 20.6, 20.8, 20.6, 19.4, 16.7, 16.9, 14.0, 13.8, 15.9, 16.4, 23.9, 27.6, 31.4, 48.6, 60.3], "price": [null, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.1, 0.0, 0.1, -0.1, -0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.1, 0.0, 0.0, -0.1, 0.0, 0.1, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0]}, "cowos": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [1.2, 1.2, 1.2, 2.8, 5.5, 7.0, 10.3, 11.5, 20.0, 22.5, 23.1, 20.5, 20.2, 19.5, 17.6, 9.9, 7.7, 6.5, 8.8, 7.5, 6.6, 6.8, 6.9, 8.4, 8.1, 9.5, 10.5, 10.3, 9.8, 9.4, 9.9, 12.5, 10.4, 10.0, 8.7, 9.0, 13.8, 11.6, 8.9, 8.9, 10.0, 11.2, 12.0, 8.7, 13.1, 13.8, 14.1, 13.0, 11.9, 12.6, 11.8, 11.8, 10.7, 8.9, 10.6, 10.2, 8.9, 7.8, 4.2, 4.9, 6.5, 5.3, 6.3, 8.1, 8.1, 7.2, 6.5, 5.9, 5.2, 4.1, 2.3, 5.3, 6.0, 6.5, 6.3, 6.1, 6.1, 6.6, 4.5, 5.8, 5.8, 4.9, 10.0, 14.6, 14.4, 17.7, 18.9, 19.4, 19.4, 17.8, 18.2, 18.4, 15.0, 13.8, 17.2, 20.2, 18.0, 15.3, 14.8, 15.1, 23.4, 20.5, 20.7, 21.0, 22.7, 28.0, 30.4, 21.8, 24.9, 29.7, 29.6, 31.3, 28.5, 32.8, 33.9, 37.0, 32.4, 36.1, 43.5, 59.0], "price": [null, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.1, 0.0, 0.1, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.1, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0]}, "optical_comm": {"dates": ["11/26", "11/27", "11/28", "12/01", "12/02", "12/03", "12/04", "12/05", "12/08", "12/09", "12/10", "12/11", "12/12", "12/15", "12/16", "12/17", "12/18", "12/19", "12/22", "12/23", "12/24", "12/26", "12/29", "12/30", "12/31", "01/02", "01/05", "01/06", "01/07", "01/08", "01/09", "01/12", "01/13", "01/14", "01/15", "01/16", "01/19", "01/20", "01/21", "01/22", "01/23", "01/26", "01/27", "01/28", "01/29", "01/30", "02/02", "02/03", "02/04", "02/05", "02/06", "02/09", "02/10", "02/11", "02/23", "02/24", "02/25", "02/26", "03/02", "03/03", "03/04", "03/05", "03/06", "03/09", "03/10", "03/11", "03/12", "03/13", "03/16", "03/17", "03/18", "03/19", "03/20", "03/23", "03/24", "03/25", "03/26", "03/27", "03/30", "03/31", "04/01", "04/02", "04/07", "04/08", "04/09", "04/10", "04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21", "04/22", "04/23", "04/24", "04/27", "04/28", "04/29", "04/30", "05/04", "05/05", "05/06", "05/07", "05/08", "05/11", "05/12", "05/13", "05/14", "05/15", "05/18", "05/19", "05/20", "05/21", "05/22", "05/25", "05/26", "05/27", "05/28", "05/29"], "composite": [0.0, 0.8, 1.7, 3.5, 4.1, 3.7, 3.8, 3.8, 7.4, 7.7, 7.8, 7.1, 6.9, 8.6, 9.7, 5.8, 5.5, 4.1, 5.0, 5.0, 3.8, 4.1, 6.0, 5.7, 5.9, 5.5, 5.5, 5.4, 3.9, 1.9, 1.9, 6.4, 6.4, 6.6, 6.9, 7.4, 7.4, 7.9, 3.9, 3.2, 2.9, 3.1, 3.6, 6.9, 6.3, 5.8, 7.2, 8.6, 8.5, 9.0, 6.3, 9.4, 14.1, 13.6, 18.7, 17.6, 17.6, 18.5, 17.2, 15.1, 15.5, 9.7, 10.2, 10.6, 10.6, 11.0, 14.8, 16.1, 21.9, 23.7, 24.3, 24.8, 23.4, 17.7, 17.2, 12.0, 11.0, 10.1, 10.6, 11.6, 14.4, 16.4, 21.6, 22.2, 24.5, 23.0, 26.4, 25.0, 24.2, 19.1, 19.7, 27.4, 30.0, 26.5, 24.8, 23.2, 27.0, 26.1, 14.7, 13.5, 17.4, 22.4, 26.6, 29.3, 33.1, 39.0, 39.9, 35.2, 30.9, 26.2, 22.0, 19.4, 14.7, 15.4, 19.7, 23.4, 29.3, 31.3, 40.3, 51.2], "price": [null, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, -0.0, -0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.1, 0.0, 0.1, -0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.1, -0.1, -0.0, 0.0, -0.0, 0.0, -0.0, -0.1, 0.1, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, -0.0, 0.1, 0.0, 0.1, 0.1, -0.0, -0.0, -0.0, -0.0, -0.1, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0, -0.0, 0.0, -0.1, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0]}};
+const PRIMARY = '#1565C0', PRICE = '#9E9E9E';
+for (const [topic, d] of Object.entries(DATA)) {
+  const ctx = document.getElementById('chart-' + topic);
+  if (!ctx) continue;
+  const ds = [{
+    label:'綜合熱度', data:d.composite, borderColor:PRIMARY, backgroundColor:'rgba(21,101,192,.08)',
+    borderWidth:2, fill:true, tension:.3, pointRadius:0, yAxisID:'y'
+  }];
+  if (d.price && d.price.some(v=>v!==null)) ds.push({
+    label:'股價(對照)', data:d.price, borderColor:PRICE, borderWidth:1.5,
+    borderDash:[4,3], fill:false, tension:.3, pointRadius:0, yAxisID:'y1'
+  });
+  new Chart(ctx, {
+    type:'line', data:{ labels:d.dates, datasets:ds },
+    options:{
+      responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{ legend:{display:true, labels:{boxWidth:12, font:{size:11}}} },
+      scales:{
+        x:{ ticks:{maxTicksLimit:6, font:{size:10}}, grid:{display:false} },
+        y:{ position:'left', title:{display:true,text:'熱度',font:{size:10}}, ticks:{font:{size:10}} },
+        y1:{ position:'right', grid:{display:false}, title:{display:true,text:'股價',font:{size:10}}, ticks:{font:{size:10}} }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
