@@ -245,16 +245,23 @@ def run(args: argparse.Namespace) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        from src.radar_report_generator import generate_radar
-        generate_radar(
-            radar_df=radar_df,
-            topic_nii_map=topic_nii_map,
-            topic_smi_map=topic_smi_map,
-            display_names=display_names,
-            output_path=output,
-            topic_chips_map=topic_chips_map if topic_chips_map else None,
-        )
-        log.info("✅ 報告已生成：%s", output)
+        if heat_map:
+            # 熱度指標 v2 — Material Design 報告（新版）
+            from src.heat_report_generator import generate_heat_report
+            generate_heat_report(heat_map, topic_smi_map, display_names, output)
+            log.info("✅ 報告已生成（熱度指標 v2 / Material Design）：%s", output)
+        else:
+            # 後備：若新熱度計算失敗，沿用舊版報告避免斷線
+            from src.radar_report_generator import generate_radar
+            generate_radar(
+                radar_df=radar_df,
+                topic_nii_map=topic_nii_map,
+                topic_smi_map=topic_smi_map,
+                display_names=display_names,
+                output_path=output,
+                topic_chips_map=topic_chips_map if topic_chips_map else None,
+            )
+            log.info("✅ 報告已生成（舊版 fallback）：%s", output)
     except Exception as e:
         log.error("報告生成失敗：%s", e, exc_info=True)
         sys.exit(1)
