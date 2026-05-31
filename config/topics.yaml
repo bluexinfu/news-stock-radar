@@ -137,3 +137,23 @@ optical_comm:
     start: "2025-11-26"
     end: "2026-05-27"
   benchmark: "^TWII"
+
+leo_satellite:
+  display_name: "低軌衛星"
+  keywords:
+    primary: ["低軌衛星"]
+    chinese: ["低軌衛星", "衛星通訊", "衛星概念股", "星鏈", "太空產業", "衛星地面站"]
+    english: ["LEO satellite", "low earth orbit", "satellite communication", "Starlink", "satellite internet"]
+  exclude_terms: []
+  related_stocks:
+    primary:
+      - { ticker: "2314.TW", name: "台揚",   role: "衛星通訊微波設備" }
+      - { ticker: "3491.TWO", name: "昇達科", role: "毫米波元件/地面接收站" }
+    secondary:
+      - { ticker: "6285.TW", name: "啟碁",   role: "衛星終端/網通設備" }
+      - { ticker: "6271.TW", name: "同欣電", role: "衛星模組封裝" }
+      - { ticker: "2368.TW", name: "金像電", role: "高階PCB" }
+  time_range:
+    start: "2025-11-26"
+    end: "2026-05-27"
+  benchmark: "^TWII"
