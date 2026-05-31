@@ -178,6 +178,26 @@ def run(args: argparse.Namespace) -> None:
         except Exception as e:
             log.debug("[%s] 情緒分析跳過：%s", topic, e)
 
+    # ── Step 2.6：市場熱度 v2（新指標）────────────────────────────────
+    # 權威加權新聞 + YouTube 觀看，全域正規化後合成（新聞 0.8 + YouTube 0.2）。
+    # 與舊 NII 並存（過渡期非破壞）；報告/通知於後續步驟切換至此指標。
+    heat_map: dict = {}
+    try:
+        from src.processors.heat import build_all_heat, PHASE_EMOJI
+        heat_map = build_all_heat(list(topic_nii_map.keys()), write=True)
+        if heat_map:
+            log.info("\n=== 市場熱度 v2 排行（綜合熱度）===")
+            ranking = sorted(heat_map.items(),
+                             key=lambda kv: -float(kv[1]["composite"].iloc[-1]))
+            for i, (t, df) in enumerate(ranking, 1):
+                ph = df["phase"].iloc[-1]
+                log.info("#%d %s %s  綜合=%.1f  新聞型=%.1f  影片型=%.1f  加速=%.2f",
+                         i, PHASE_EMOJI.get(ph, ""), display_names.get(t, t),
+                         float(df["composite"].iloc[-1]), float(df["news_norm"].iloc[-1]),
+                         float(df["youtube_norm"].iloc[-1]), float(df["accel"].iloc[-1]))
+    except Exception as e:
+        log.warning("市場熱度 v2 計算失敗（不影響現有流程）：%s", e)
+
     # ── Step 3：Theme Radar 排行 ──────────────────────────────────────
     from src.analyzers.theme_radar import rank_themes
     radar_df = rank_themes(topic_nii_map, display_names=display_names)
