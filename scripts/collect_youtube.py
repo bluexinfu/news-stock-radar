@@ -43,11 +43,25 @@ API = "https://www.googleapis.com/youtube/v3"
 
 
 def load_api_key() -> str:
-    for line in (ROOT / ".env").read_text().splitlines():
-        line = line.strip()
-        if line.startswith("YOUTUBE_API_KEY="):
-            return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise SystemExit("❌ .env 找不到 YOUTUBE_API_KEY")
+    # 優先讀環境變數（CI 用 GitHub Secret）；本機則回退讀 .env
+    import os
+    key = os.getenv("YOUTUBE_API_KEY", "").strip()
+    if key:
+        return key
+    env = ROOT / ".env"
+    if env.exists():
+        for line in env.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("YOUTUBE_API_KEY="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    raise SystemExit("❌ 找不到 YOUTUBE_API_KEY（環境變數或 .env）")
+
+
+# 部分題材的中文關鍵字對 YouTube 搜尋效果差，用更貼近財經影片的查詢覆蓋
+QUERY_OVERRIDE = {
+    "power_management": "台達電 儲能 電源管理",
+    "passive_components": "被動元件 國巨 MLCC",
+}
 
 
 def load_channel_weights() -> tuple[dict, float, int]:
@@ -67,7 +81,7 @@ def load_topic_queries() -> dict[str, tuple[str, str]]:
         if not isinstance(c, dict):
             continue
         zh = c.get("keywords", {}).get("chinese", [])
-        query = " ".join(zh[:3]) if zh else c.get("display_name", topic)
+        query = QUERY_OVERRIDE.get(topic) or (" ".join(zh[:3]) if zh else c.get("display_name", topic))
         out[topic] = (c.get("display_name", topic), query)
     return out
 

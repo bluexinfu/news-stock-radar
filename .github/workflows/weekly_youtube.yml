@@ -1,0 +1,75 @@
+name: Weekly YouTube Collection
+
+# 每週一次刷新 YouTube 財經影片觀看熱度（觀看數變化慢，無需每日）。
+# 資料推回 data branch，供每日管線（daily_pipeline）讀取並計入「影片型關注」。
+# 需要 GitHub Secret：YOUTUBE_API_KEY
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'    # 每週一 02:00 UTC = 台北 10:00
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write     # 推回 data branch
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 還原既有 data branch（保留新聞等其他原始資料，避免被覆蓋）
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data_cache
+        continue-on-error: true
+
+      - name: Restore raw data from cache
+        run: |
+          if [ -d "_data_cache/data/raw" ]; then
+            mkdir -p data/raw
+            cp -r _data_cache/data/raw/. data/raw/
+            echo "✅ 還原快取資料"
+          else
+            mkdir -p data/raw
+            echo "ℹ️ 無快取（首次）"
+          fi
+        continue-on-error: true
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install pandas pyarrow pyyaml
+
+      # 採集 YouTube 觀看熱度（逐月切片覆蓋近 190 天）
+      - name: Collect YouTube data
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -z "$YOUTUBE_API_KEY" ]; then
+            echo "❌ 未設定 YOUTUBE_API_KEY Secret，跳過"; exit 0
+          fi
+          python scripts/collect_youtube.py --days 190 --max-pages 1
+
+      # 推回 data branch（沿用 daily_pipeline 的模式）
+      - name: Push YouTube data to data branch
+        run: |
+          mkdir -p _data_cache/data/raw
+          cp -r data/raw/. _data_cache/data/raw/ 2>/dev/null || true
+
+          cd _data_cache
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout data 2>/dev/null || git checkout --orphan data
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: weekly youtube refresh $(date -u +%Y-%m-%d)"
+          git push origin data
+        continue-on-error: true
