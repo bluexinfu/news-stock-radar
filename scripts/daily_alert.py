@@ -61,41 +61,21 @@ ALERT_TRANSITIONS = {
 }
 
 
-# ── 資料讀取 ─────────────────────────────────────────────────────────
+# ── 資料讀取（市場熱度 v2）─────────────────────────────────────────
 
-def load_topic_nii(topic: str) -> pd.Series | None:
-    path = ROOT / "data" / "processed" / f"{topic}_nii.parquet"
+def load_topic_heat(topic: str) -> pd.DataFrame | None:
+    """讀取新熱度資料（已含 composite、news_norm、youtube_norm、accel、phase）。"""
+    path = ROOT / "data" / "processed" / f"{topic}_heat.parquet"
     if not path.exists():
-        log.debug("[%s] 無 NII 資料（%s）", topic, path)
+        log.debug("[%s] 無熱度資料（%s）", topic, path)
         return None
-    df = pd.read_parquet(path)
-    col = "nii" if "nii" in df.columns else df.columns[-1]
-    s = df[col].dropna()
-    if len(s) < 2:
-        return None
-    return s
+    df = pd.read_parquet(path).dropna(subset=["composite"])
+    return df if len(df) >= 2 else None
 
 
 def load_topics_yaml() -> dict:
     with open(ROOT / "config" / "topics.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
-
-
-# ── 相位計算 ─────────────────────────────────────────────────────────
-
-def get_phase(nii: pd.Series) -> str:
-    from src.analyzers.theme_radar import detect_phase
-    return detect_phase(nii)
-
-
-def get_nii_stats(nii: pd.Series) -> dict:
-    """回傳最新 NII 及 7 天斜率（用於訊息格式化）。"""
-    from src.analyzers.theme_radar import compute_nii_slope
-    latest = float(nii.iloc[-1])
-    slopes = compute_nii_slope(nii, window=7)
-    valid_slopes = slopes.dropna()
-    slope_7d = float(valid_slopes.iloc[-1]) if len(valid_slopes) > 0 else 0.0
-    return {"nii": latest, "slope_7d": slope_7d}
 
 
 # ── 訊息格式化 ────────────────────────────────────────────────────────
@@ -112,7 +92,7 @@ def build_message(
     report_url = f"{base_url}/{report_filename}" if report_filename else base_url
 
     lines = [
-        f"<b>📊 題材雷達日報 {today.strftime('%Y-%m-%d')}</b>",
+        f"<b>📡 題材熱度雷達 {today.strftime('%Y-%m-%d')}</b>",
         f'🔗 <a href="{report_url}">開啟完整報告</a>',
         "",
     ]
@@ -133,12 +113,13 @@ def build_message(
                 lines.append(f"  <i>({note})</i>")
         lines.append("")
 
-    lines.append("📋 <b>今日各主題狀態</b>")
+    lines.append("📋 <b>今日各題材熱度</b>")
     for s in all_status:
-        slope_str = f"+{s['slope_7d']:.3f}" if s['slope_7d'] >= 0 else f"{s['slope_7d']:.3f}"
+        a = s["accel"]
+        arrow = "▲" if a > 0.5 else ("▼" if a < -0.5 else "▬")
         lines.append(
             f"  {PHASE_EMOJI[s['phase']]} {s['display_name']}"
-            f"  NII={s['nii']:.1f}  7d斜率={slope_str}"
+            f"  熱度={s['composite']:.0f}  {arrow}{abs(a):.1f}"
         )
 
     lines += [
@@ -158,40 +139,38 @@ def run(dry_run: bool = False, force_send: bool = False, report_filename: str | 
 
     for topic, cfg in topics_cfg.items():
         display_name = cfg.get("display_name", topic)
-        nii = load_topic_nii(topic)
-        if nii is None:
-            log.warning("[%s] 無法讀取 NII，跳過", topic)
+        heat = load_topic_heat(topic)
+        if heat is None:
+            log.warning("[%s] 無法讀取熱度資料，跳過", topic)
             continue
 
-        today_phase = get_phase(nii)
-        yesterday_phase = get_phase(nii.iloc[:-1]) if len(nii) >= 2 else today_phase
-        stats = get_nii_stats(nii)
+        today_phase = str(heat["phase"].iloc[-1])
+        yesterday_phase = str(heat["phase"].iloc[-2])
+        latest = heat.iloc[-1]
+        stats = {
+            "composite": round(float(latest["composite"]), 1),
+            "accel": round(float(latest["accel"]), 2) if pd.notna(latest["accel"]) else 0.0,
+            "news": round(float(latest["news_norm"]), 1),
+            "youtube": round(float(latest["youtube_norm"]), 1),
+        }
 
-        log.info(
-            "[%s] %s → %s  NII=%.1f  7d斜率=%.3f",
-            topic, yesterday_phase, today_phase,
-            stats["nii"], stats["slope_7d"]
-        )
+        log.info("[%s] %s → %s  熱度=%.1f  加速=%.2f",
+                 topic, yesterday_phase, today_phase, stats["composite"], stats["accel"])
 
         all_status.append({
-            "topic": topic,
-            "display_name": display_name,
-            "phase": today_phase,
-            **stats,
+            "topic": topic, "display_name": display_name,
+            "phase": today_phase, **stats,
         })
 
         if today_phase != yesterday_phase:
             transitions.append({
-                "topic": topic,
-                "display_name": display_name,
-                "from_phase": yesterday_phase,
-                "to_phase": today_phase,
-                **stats,
+                "topic": topic, "display_name": display_name,
+                "from_phase": yesterday_phase, "to_phase": today_phase, **stats,
             })
 
     # 優先顯示：預熱 > 發燒 > 降溫 > 冷卻
     _priority = {"預熱": 1, "發燒": 2, "降溫": 3, "冷卻": 4}
-    all_status.sort(key=lambda x: (_priority.get(x["phase"], 5), -x["nii"]))
+    all_status.sort(key=lambda x: (_priority.get(x["phase"], 5), -x["composite"]))
 
     should_send = force_send or bool(transitions)
 
