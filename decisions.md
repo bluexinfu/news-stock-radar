@@ -99,3 +99,35 @@ NII_t = 0.5 × Trends_norm(t) + 0.5 × NewsCount_zscore(t)
 **交付**：完整報告見 `docs/文件3_訊號驗證報告.docx`；圖表於 `reports/lead_lag_*.png`、`reports/event_study_warming.png`。
 
 ---
+
+## D007 — 市場熱度指標 v2：從第一性原理重新定義「熱度」
+
+**日期**：2026-06-02
+**決策**：廢棄舊 NII，改以「權威加權新聞（80%）＋ 觀看加權 YouTube（20%）」
+作為市場熱度的新定義，並重做報告排版（Material Design）。
+
+**問題根源**：舊 NII = 0.5×Google Trends(0–100) + 0.5×新聞 z-score(均值 0)。
+兩項尺度不對等（一個有水位、一個均值為 0），導致 Trends 在機制上完全主宰水位，
+NII 與 Trends 相關係數 0.996–0.999，而與「新聞流量」幾乎無關——是尺度錯配的 bug，
+不只是權重沒調好。
+
+**新定義（回到源頭：熱度＝關注度）**：
+- 新聞熱度 = Σ 當日每篇文章的「媒體權威權重」（`config/source_authority.yaml`；
+  經濟日報／MoneyDJ／DIGITIMES/TrendForce=1.0、CMoney=0.8、Yahoo股市=0.7、內容農場=0.2）。
+- 影片熱度 = Σ 頻道權重 × log(1+觀看數)（`config/youtube_channels.yaml`；
+  訂閱數 < 20,000 排除，明牌台降權、嚴肅分析升權）。
+- 兩者各自做全題材全域 min-max 正規化至 0–100 後，composite = 0.8×news_norm + 0.2×youtube_norm。
+  （正規化是修正尺度錯配的真正解法，而非單純改權重。）
+
+**取捨**：PTT 股票板、Dcard 股票板因過於稀疏／雜訊太多而捨棄（CoWoS 在 PTT 每月僅 ~2 篇）；
+熱度定位採「準確描述關注度，股價僅作對照而非優化目標」；水位與加速度並存（相位系統保留）。
+
+**驗證**：純新聞熱度與股價的同步相關性最佳（0.190 > 舊 NII 0.177）；
+YouTube 偏「教育型關注」與股價較正交，故以 0.8/0.2 保留新聞主導、同時讓影片關注成為可見維度。
+延續 D006，本指標定位仍為「同步監控」而非「領先預測」。
+
+**交付**：`src/processors/heat.py`（生產用熱度模組）、`src/heat_report_generator.py`
+（Material Design 報告）、`.github/workflows/weekly_youtube.yml`（每週採集 YouTube）、
+Telegram 日報與 `run_pipeline.py` 全面切換至新熱度；新增「低軌衛星」為第 8 個題材。
+
+---
