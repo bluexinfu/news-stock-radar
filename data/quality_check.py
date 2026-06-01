@@ -69,6 +69,7 @@ def check_topic(topic: str, cfg: dict) -> int:
             errors += 1
 
     # ── 2. NII 時間範圍 + 缺漏率 ──────────────────────────────────
+    trends_path = raw_dir / "trends" / f"{topic}_trends.parquet"
     nii_path = processed_dir / f"{topic}_nii.parquet"
     if nii_path.exists():
         nii_df = pd.read_parquet(nii_path)
@@ -88,15 +89,29 @@ def check_topic(topic: str, cfg: dict) -> int:
         else:
             ok(f"NII 缺漏率 {miss_rate*100:.1f}%")
 
-        # 全零檢查
+        # 全零檢查：D007 後 NII 已退役、熱度不依賴 Trends，
+        # 故 NII 均值 ≈ 0 不再是錯誤，只在仍有 Trends 資料時提示。
         if nii.dropna().mean() < 0.1:
-            error(f"NII 均值 {nii.dropna().mean():.3f} ≈ 0（可能 Trends 資料異常）")
-            errors += 1
+            if trends_path.exists():
+                warn(f"NII 均值 {nii.dropna().mean():.3f} ≈ 0（NII 已退役，僅供參考）")
+            # 無 Trends 時 NII 為 0 屬預期，不輸出
         else:
             ok(f"NII 均值 {nii.dropna().mean():.2f}，最大 {nii.dropna().max():.2f}")
 
-    # ── 3. Trends 資料 ────────────────────────────────────────────
-    trends_path = raw_dir / "trends" / f"{topic}_trends.parquet"
+    # ── 2b. 熱度指標 v2（D007 後的主要訊號）──────────────────────
+    heat_path = processed_dir / f"{topic}_heat.parquet"
+    if heat_path.exists():
+        heat_df = pd.read_parquet(heat_path)
+        comp = heat_df["composite"].dropna() if "composite" in heat_df else pd.Series(dtype=float)
+        if comp.empty or comp.mean() < 0.1:
+            error(f"熱度 composite 均值 ≈ 0（新聞/YouTube 資料異常）")
+            errors += 1
+        else:
+            ok(f"熱度 composite 均值 {comp.mean():.1f}，最新 {comp.iloc[-1]:.1f}（相位 {heat_df['phase'].iloc[-1]}）")
+    else:
+        warn(f"熱度資料不存在：{heat_path.name}（請確認 build_all_heat 已執行）")
+
+    # ── 3. Trends 資料（已於上方定義 trends_path）──────────────────
     if trends_path.exists():
         t_df = pd.read_parquet(trends_path)
         if t_df.max().max() < 1:

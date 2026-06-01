@@ -66,6 +66,11 @@ def load_trends(topic: str) -> pd.Series:
     3. 最後 fallback：取第一欄
     """
     path = RAW_DIR / "trends" / f"{topic}_trends.parquet"
+    if not path.exists():
+        # D007 後熱度已不依賴 Google Trends；新題材或 Trends 429 時，
+        # 回傳空序列，由 align() 以全零 trends_interp 代替，不再讓整個題材失敗。
+        log.warning("找不到 Trends 檔：%s，以空序列代替（熱度不依賴 Trends）", path)
+        return pd.Series(dtype=float, name="trends_raw")
     df = pd.read_parquet(path)
     df.index = pd.to_datetime(df.index).normalize()
 
@@ -186,8 +191,11 @@ def align(topic: str) -> pd.DataFrame:
         aligned = series.reindex(trading_days).ffill()
         frames[f"close_{_safe_name(ticker)}"] = aligned
 
-    # 對齊 Trends（內插）
-    frames["trends_interp"] = _interpolate_trends(trends_raw, trading_days)
+    # 對齊 Trends（內插）；無 Trends 資料時填 0（D007 後熱度不依賴 Trends）
+    if not trends_raw.empty:
+        frames["trends_interp"] = _interpolate_trends(trends_raw, trading_days)
+    else:
+        frames["trends_interp"] = pd.Series(0.0, index=trading_days, name="trends_interp")
 
     # 對齊新聞數（週末累積到下一個交易日）
     if not news_raw.empty:
